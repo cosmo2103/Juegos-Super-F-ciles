@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menú de Juegos</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            text-align: center;
+            background: linear-gradient(135deg, #ff9a9e, #fecfef, #a8edea, #fed6e3);
+            background-size: 400% 400%;
+            animation: gradientShift 10s ease infinite;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+            transition: all 0.5s ease;
+        }
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        h1 {
+            font-size: 3em;
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            margin-bottom: 20px;
+            animation: fadeIn 2s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .menu {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            animation: slideIn 1s ease-out;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(-100%); }
+            to { transform: translateX(0); }
+        }
+        .game-button {
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            border: none;
+            border-radius: 15px;
+            padding: 20px;
+            width: 200px;
+            height: 150px;
+            font-size: 1.2em;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 8px 15px rgba(0,0,0,0.3);
+            transition: transform 0.3s, box-shadow 0.3s, background 0.3s;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-decoration: none;
+        }
+        .game-button:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 12px 20px rgba(0,0,0,0.4);
+            background: linear-gradient(45deg, #ff4757, #26de81);
+        }
+    </style>
+</head>
+<body>
+    <h1>Juegos Super Fáciles</h1>
+    <p>¡Selecciona un juego para empezar!</p>
+    <div class="menu">
+        <a href="atrapadas.html" class="game-button" id="triquiBtn">
+            <strong>ATRAPADAS</strong><br>(2 Jugadores)
+        </a>
+        <a href="serpiente.html" class="game-button" id="pacmanBtn">
+            <strong>SERPIENTE</strong><br>(1 Jugador)
+        </a>
+        <a href="triqui.html" class="game-button" id="snakeBtn">
+            <strong>TRIQUI</strong><br>(2 Jugador)
+        </a>
+        <a href="naves.html" class="game-button" id="memoryBtn">
+            <strong>NAVES</strong><br>(1-2 Jugadores)
+        </a>
+       
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const buttons = document.querySelectorAll('.game-button');
+            buttons.forEach((btn, index) => {
+                btn.style.animationDelay = `${index * 0.2}s`;
+                btn.addEventListener('mouseenter', () => {
+                    btn.style.transform = 'translateY(-10px) scale(1.1)';
+                });
+                btn.addEventListener('mouseleave', () => {
+                    btn.style.transform = 'translateY(0) scale(1)';
+                });
+            });
+        });
+
+        const stats = JSON.parse(localStorage.getItem('gameStats')) || { totalGames: 0 };
+        console.log('Estadísticas globales:', stats); // Para depuración
+    </script>
+</body>
+</html>

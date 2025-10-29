@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atrapados</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+        h1 {
+            color: #333;
+        }
+        .score {
+            font-size: 1.5em;
+            color: #333;
+            margin: 10px;
+        }
+        canvas {
+            border: 2px solid #333;
+            background-color: #fff;
+        }
+        button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.2em;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        .game-over {
+            color: red;
+            font-size: 2em;
+            margin-top: 20px;
+            display: none;
+        }
+        .menu {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin-top: 20px;
+        }
+        .menu button {
+            background-color: #007bff;
+        }
+        .menu button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>Atrapados</h1>
+    <div class="score">Puntos: <span id="score">0</span></div>
+    <canvas id="gameCanvas" width="400" height="400"></canvas>
+
+    <!-- Menú principal -->
+    <div class="menu" id="menu">
+        <button onclick="startGame()">Iniciar Juego</button>
+        <button onclick="goToMenu()">Volver al Menú</button>
+    </div>
+
+    <div class="game-over" id="gameOverMessage">
+        ¡Game Over! <br> Puntos: <span id="finalScore"></span>
+        <br><br>
+        <button onclick="restartGame()">Reiniciar Juego</button>
+        <button onclick="goToMenu()">Volver al Menú</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        let cesto = { x: 175, y: 350, width: 50, height: 10 };
+        let objetos = [];
+        let score = 0;
+        let gameInterval, objectInterval;
+        let gameOver = false;
+
+        // Función para dibujar el cesto
+        function drawCesto() {
+            ctx.fillStyle = '#28a745';
+            ctx.fillRect(cesto.x, cesto.y, cesto.width, cesto.height);
+        }
+
+        // Función para dibujar los objetos que caen
+        function drawObjetos() {
+            ctx.fillStyle = '#ff6347';
+            objetos.forEach(obj => {
+                ctx.beginPath();
+                ctx.arc(obj.x, obj.y, 10, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        // Función para mover los objetos
+        function moveObjetos() {
+            objetos.forEach(obj => {
+                obj.y += obj.speed; // Mover el objeto hacia abajo
+            });
+            objetos = objetos.filter(obj => obj.y < canvas.height); // Eliminar objetos fuera de la pantalla
+
+            // Detectar objetos que se han caído sin ser atrapados
+            objetos.forEach((obj, index) => {
+                if (obj.y >= canvas.height) {
+                    // Si una bola llega al fondo sin ser atrapada, se acaba el juego
+                    endGame();
+                }
+            });
+        }
+
+        // Función para detectar colisiones con el cesto
+        function checkCollisions() {
+            objetos.forEach((obj, index) => {
+                if (obj.y + 10 >= cesto.y && obj.x >= cesto.x && obj.x <= cesto.x + cesto.width) {
+                    score++;
+                    objetos.splice(index, 1); // Elimina el objeto atrapado
+                    document.getElementById('score').textContent = `Puntos: ${score}`;
+                }
+            });
+        }
+
+        // Función para generar nuevos objetos
+        function generateObjetos() {
+            let x = Math.random() * (canvas.width - 20);
+            let speed = Math.random() * 1.5 + 0.5; // Reducir velocidad de caída (más lento)
+            objetos.push({ x, y: 0, speed });
+        }
+
+        // Función para actualizar la posición del cesto
+        function moveCesto(e) {
+            if (e.key === 'ArrowLeft' && cesto.x > 0) {
+                cesto.x -= 20;
+            } else if (e.key === 'ArrowRight' && cesto.x < canvas.width - cesto.width) {
+                cesto.x += 20;
+            }
+        }
+
+        // Función para finalizar el juego
+        function endGame() {
+            clearInterval(gameInterval);
+            clearInterval(objectInterval);
+            gameOver = true;
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('gameOverMessage').style.display = 'block';
+            document.getElementById('menu').style.display = 'none'; // Ocultar menú cuando se termina el juego
+        }
+
+        // Función para reiniciar el juego
+        function restartGame() {
+            gameOver = false;
+            score = 0;
+            objetos = [];
+            document.getElementById('score').textContent = `Puntos: ${score}`;
+            document.getElementById('gameOverMessage').style.display = 'none';
+            startGame();
+        }
+
+        // Función para iniciar el juego
+        function startGame() {
+            // Resetear estado
+            canvas.width = 400;
+            canvas.height = 400;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            gameInterval = setInterval(function() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                drawCesto();
+                drawObjetos();
+                moveObjetos();
+                checkCollisions();
+            }, 20);
+
+            objectInterval = setInterval(generateObjetos, 1500); // Generar objetos más lentamente
+            window.addEventListener('keydown', moveCesto);
+
+            // Ocultar el menú principal y mostrar el juego
+            document.getElementById('menu').style.display = 'none';
+        }
+
+        // Función para volver al menú principal
+        function goToMenu() {
+            clearInterval(gameInterval);
+            clearInterval(objectInterval);
+            document.getElementById('gameOverMessage').style.display = 'none';
+            document.getElementById('menu').style.display = 'flex';
+            document.getElementById('score').textContent = 'Puntos: 0';
+        }
+
+        // Iniciar el juego cuando el documento esté listo
+        window.addEventListener('DOMContentLoaded', () => {
+            document.querySelector("button").disabled = false;
+        });
+    </script>
+</body>
+</html>
+

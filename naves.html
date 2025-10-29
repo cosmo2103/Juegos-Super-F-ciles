@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Space Shooter</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+            background-color: #0b3d91;
+            color: #fff;
+        }
+        h1 {
+            color: #fff;
+        }
+        .score {
+            font-size: 1.5em;
+            margin-top: 10px;
+        }
+        canvas {
+            border: 2px solid #fff;
+        }
+        button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #e74c3c;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.2em;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #c0392b;
+        }
+        .game-over {
+            color: red;
+            font-size: 2em;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Space Shooter</h1>
+    <div class="score">Puntos: <span id="score">0</span></div>
+    <canvas id="gameCanvas" width="400" height="600"></canvas>
+    <button onclick="startGame()">Iniciar Juego</button>
+    <div class="game-over" id="gameOverMessage" style="display:none;">¡Game Over! <br> Puntos: <span id="finalScore"></span></div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        let ship = { x: 175, y: 550, width: 50, height: 30 };
+        let bullets = [];
+        let enemies = [];
+        let score = 0;
+        let gameInterval, enemyInterval;
+        let gameOver = false;
+
+        // Función para dibujar la nave
+        function drawShip() {
+            ctx.fillStyle = '#ffcc00';
+            ctx.fillRect(ship.x, ship.y, ship.width, ship.height);
+        }
+
+        // Función para dibujar las balas
+        function drawBullets() {
+            ctx.fillStyle = '#ff0000';
+            bullets.forEach(bullet => {
+                ctx.fillRect(bullet.x, bullet.y, 5, 15);
+            });
+        }
+
+        // Función para mover las balas
+        function moveBullets() {
+            bullets.forEach(bullet => {
+                bullet.y -= 5; // Mover las balas hacia arriba
+            });
+            bullets = bullets.filter(bullet => bullet.y > 0); // Eliminar balas fuera de la pantalla
+        }
+
+        // Función para generar enemigos
+        function generateEnemies() {
+            let x = Math.random() * (canvas.width - 20);
+            let speed = Math.random() * 2 + 1;
+            enemies.push({ x, y: 0, width: 20, height: 20, speed });
+        }
+
+        // Función para dibujar los enemigos
+        function drawEnemies() {
+            ctx.fillStyle = '#00ff00';
+            enemies.forEach(enemy => {
+                ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+            });
+        }
+
+        // Función para mover los enemigos
+        function moveEnemies() {
+            enemies.forEach(enemy => {
+                enemy.y += enemy.speed;
+            });
+            enemies = enemies.filter(enemy => enemy.y < canvas.height); // Eliminar enemigos fuera de la pantalla
+        }
+
+        // Función para detectar colisiones entre balas y enemigos
+        function checkCollisions() {
+            bullets.forEach((bullet, bulletIndex) => {
+                enemies.forEach((enemy, enemyIndex) => {
+                    // Detectar colisiones
+                    if (bullet.x < enemy.x + enemy.width &&
+                        bullet.x + 5 > enemy.x &&
+                        bullet.y < enemy.y + enemy.height &&
+                        bullet.y + 15 > enemy.y) {
+                        // Eliminar bala y enemigo al colisionar
+                        bullets.splice(bulletIndex, 1);
+                        enemies.splice(enemyIndex, 1);
+                        score++;
+                        document.getElementById('score').textContent = `Puntos: ${score}`;
+                    }
+                });
+            });
+        }
+
+        // Función para detectar colisiones entre la nave y los enemigos
+        function checkShipCollisions() {
+            enemies.forEach((enemy, enemyIndex) => {
+                if (enemy.x < ship.x + ship.width &&
+                    enemy.x + enemy.width > ship.x &&
+                    enemy.y < ship.y + ship.height &&
+                    enemy.y + enemy.height > ship.y) {
+                    // Si la nave colisiona con un enemigo, termina el juego
+                    endGame();
+                }
+            });
+        }
+
+        // Función para verificar si los enemigos llegaron al fondo
+        function checkEnemiesAtBottom() {
+            enemies.forEach((enemy, enemyIndex) => {
+                if (enemy.y >= canvas.height) {
+                    // Si un enemigo llega al fondo, termina el juego
+                    endGame();
+                }
+            });
+        }
+
+        // Función para manejar el movimiento de la nave
+        function moveShip(e) {
+            if (e.key === 'ArrowLeft' && ship.x > 0) {
+                ship.x -= 20;
+            } else if (e.key === 'ArrowRight' && ship.x < canvas.width - ship.width) {
+                ship.x += 20;
+            } else if ((e.key === 'b' || e.key === 'B') && !gameOver) {
+                shootBullet(); // Disparar cuando se presiona la tecla "B"
+            }
+        }
+
+        // Función para disparar balas
+        function shootBullet() {
+            bullets.push({ x: ship.x + ship.width / 2 - 2, y: ship.y, width: 5, height: 15 });
+        }
+
+        // Función para finalizar el juego
+        function endGame() {
+            gameOver = true;
+            clearInterval(gameInterval);
+            clearInterval(enemyInterval);
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('gameOverMessage').style.display = 'block';
+        }
+
+        // Función para iniciar el juego
+        function startGame() {
+            score = 0;
+            document.getElementById('score').textContent = `Puntos: ${score}`;
+            ship = { x: 175, y: 550, width: 50, height: 30 };
+            bullets = [];
+            enemies = [];
+            gameOver = false;
+            canvas.width = 400;
+            canvas.height = 600;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            document.getElementById('gameOverMessage').style.display = 'none';
+
+            gameInterval = setInterval(function() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                drawShip();
+                drawBullets();
+                moveBullets();
+                drawEnemies();
+                moveEnemies();
+                checkCollisions();
+                checkShipCollisions();
+                checkEnemiesAtBottom();
+            }, 20);
+
+            enemyInterval = setInterval(generateEnemies, 1500);
+            window.addEventListener('keydown', moveShip);
+        }
+
+        // Iniciar el juego cuando el documento esté listo
+        window.addEventListener('DOMContentLoaded', () => {
+            document.querySelector("button").disabled = false;
+        });
+    </script>
+</body>
+</html>

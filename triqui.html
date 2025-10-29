@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Triqui</title>
+    <style>
+        body {
+            font-family: 'Comic Sans MS', cursive;
+            text-align: center;
+            background: linear-gradient(135deg, #74b9ff, #a29bfe, #fd79a8);
+            background-size: 400% 400%;
+            animation: gradientShift 8s ease infinite;
+            margin: 0;
+            padding: 20px;
+            color: #fff;
+            transition: background 1s ease;
+        }
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        h1 { font-size: 3em; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); animation: bounce 1s ease; }
+        @keyframes bounce { 0%, 20%, 50%, 80%, 100% { transform: translateY(0); } 40% { transform: translateY(-10px); } 60% { transform: translateY(-5px); } }
+        .score { font-size: 1.5em; margin: 20px; color: #fff; }
+        #board {
+            position: relative;
+            display: inline-block;
+            width: 180px;
+            height: 180px;
+        }
+        #board div {
+            width: 60px;
+            height: 60px;
+            border: 2px solid #fff;
+            display: inline-block;
+            cursor: pointer;
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+            font-size: 2em;
+            color: #fff;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            transition: background 0.3s, transform 0.2s;
+            position: absolute;
+        }
+        #board div:nth-child(1) { top: 0; left: 0; }
+        #board div:nth-child(2) { top: 0; left: 60px; }
+        #board div:nth-child(3) { top: 0; left: 120px; }
+        #board div:nth-child(4) { top: 60px; left: 0; }
+        #board div:nth-child(5) { top: 60px; left: 60px; }
+        #board div:nth-child(6) { top: 60px; left: 120px; }
+        #board div:nth-child(7) { top: 120px; left: 0; }
+        #board div:nth-child(8) { top: 120px; left: 60px; }
+        #board div:nth-child(9) { top: 120px; left: 120px; }
+        #board div:hover { background: rgba(255,255,255,0.4); transform: scale(1.1); }
+        .winning-line {
+            position: absolute;
+            background: #ff0000;
+            height: 4px;
+            border-radius: 2px;
+            display: none;
+            animation: drawLine 1s ease-out;
+        }
+        @keyframes drawLine { from { width: 0; } to { width: 100%; } }
+        .horizontal { width: 180px; }
+        .vertical { width: 4px; height: 180px; }
+        .diagonal1 { width: 254px; transform: rotate(45deg); top: 88px; left: -37px; }
+        .diagonal2 { width: 254px; transform: rotate(-45deg); top: 88px; left: -37px; }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            justify-content: center;
+            align-items: center;
+            animation: fadeInModal 0.5s ease;
+        }
+        @keyframes fadeInModal { from { opacity: 0; } to { opacity: 1; } }
+        .modal-content {
+            background: linear-gradient(45deg, #74b9ff, #a29bfe);
+            padding: 50px;
+            border-radius: 20px;
+            text-align: center;
+            font-size: 2em;
+            color: #fff;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        button {
+            margin: 10px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+            background: #fd79a8;
+            color: white;
+            cursor: pointer;
+            font-size: 1em;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            transition: background 0.3s, transform 0.2s;
+        }
+        button:hover { background: #e84393; transform: scale(1.05); }
+    </style>
+</head>
+<body>
+    <h1>Triqui</h1>
+    <div class="score">X: <span id="scoreX">0</span> | O: <span id="scoreO">0</span> | Rondas: <span id="rounds">0/3</span></div>
+    <div id="board">
+        <div></div><div></div><div></div>
+        <div></div><div></div><div></div>
+        <div></div><div></div><div></div>
+        <div class="winning-line horizontal" id="line1"></div>
+        <div class="winning-line horizontal" id="line2"></div>
+        <div class="winning-line horizontal" id="line3"></div>
+        <div class="winning-line vertical" id="line4"></div>
+        <div class="winning-line vertical" id="line5"></div>
+        <div class="winning-line vertical" id="line6"></div>
+        <div class="winning-line diagonal1" id="line7"></div>
+        <div class="winning-line diagonal2" id="line8"></div>
+    </div>
+    <button onclick="resetGame()">Reiniciar Serie</button>
+    <a href="menu.html"><button>Volver al Menú</button></a>
+
+    <div class="modal" id="winModal">
+        <div class="modal-content">
+            <p id="winMessage"></p>
+            <button onclick="nextRound()">Siguiente Ronda</button>
+            <a href="menu.html"><button>Volver al Menú</button></a>
+        </div>
+    </div>
+
+    <div class="modal" id="finalModal">
+        <div class="modal-content">
+            <p id="finalMessage"></p>
+            <button onclick="resetGame()">Jugar de Nuevo</button>
+            <a href="menu.html"><button>Volver al Menú</button></a>
+        </div>
+    </div>
+
+    <script>
+        let ticTacToeBoard = ['', '', '', '', '', '', '', '', ''];
+        let currentPlayer = 'X';
+        let scoreX = 0, scoreO = 0;
+        let rounds = 0;
+        const maxRounds = 3;
+
+        const loadScores = () => {
+            const data = JSON.parse(localStorage.getItem('triquiScores')) || { X: 0, O: 0 };
+            scoreX = data.X;
+            scoreO = data.O;
+            updateScore();
+        };
+
+        const saveScores = () => {
+            const data = { X: scoreX, O: scoreO };
+            localStorage.setItem('triquiScores', JSON.stringify(data));
+        };
+
+        document.addEventListener('DOMContentLoaded', loadScores);
+
+        const animateWin = () => {
+            document.body.style.background = 'linear-gradient(135deg, #ff6b6b, #4ecdc4)';
+            setTimeout(() => {
+                document.body.style.background = 'linear-gradient(135deg, #74b9ff, #a29bfe, #fd79a8)';
+            }, 2000);
+        };
+
+        function renderTicTacToe() {
+            const board = document.getElementById('board');
+            const cells = board.querySelectorAll('div:not(.winning-line)');
+            cells.forEach((cell, index) => {
+                cell.textContent = ticTacToeBoard[index];
+                cell.onclick = () => makeMove(index);
+            });
+            document.querySelectorAll('.winning-line').forEach(line => line.style.display = 'none');
+        }
+
+        function makeMove(index) {
+            if (ticTacToeBoard[index] === '') {
+                ticTacToeBoard[index] = currentPlayer;
+                const winCombo = checkWin();
+                if (winCombo) {
+                    drawWinningLine(winCombo);
+                    document.getElementById('winMessage').textContent = `¡GANADOR: ${currentPlayer}!`;
+                    document.getElementById('winModal').style.display = 'flex';
+                    animateWin();
+                    if (currentPlayer === 'X') scoreX++; else scoreO++;
+                    saveScores();
+                    updateScore();
+                    rounds++;
+                    if (scoreX === 2 || scoreO === 2 || rounds === maxRounds) {
+                        setTimeout(() => {
+                            document.getElementById('winModal').style.display = 'none';
+                            showFinalWinner();
+                        }, 2000);
+                    }
+                    return;
+                }
+                currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+                renderTicTacToe();
+            }
+        }
+
+        function checkWin() {
+            const wins = [[0,1,2], [3,4,5], [6,7,8], [0,3,6], [1,4,7], [2,5,8], [0,4,8], [2,4,6]];
+            for (let i = 0; i < wins.length; i++) {
+                if (wins[i].every(idx => ticTacToeBoard[idx] === currentPlayer)) return wins[i];
+            }
+            return null;
+        }
+
+        function drawWinningLine(combo) {
+            const lines = {'0,1,2': 'line1', '3,4,5': 'line2', '6,7,8': 'line3', '0,3,6': 'line4', '1,4,7': 'line5', '2,5,8': 'line6', '0,4,8': 'line7', '2,4,6': 'line8'};
+            document.getElementById(lines[combo.join(',')]).style.display = 'block';
+        }
+
+        function nextRound() {
+            ticTacToeBoard = ['', '', '', '', '', '', '', '', ''];
+            currentPlayer = 'X';
+            document.getElementById('winModal').style.display = 'none';
+            renderTicTacToe();
+        }
+
+        function showFinalWinner() {
+            let winner = scoreX > scoreO ? 'X' : scoreO > scoreX ? 'O' : 'Empate';
+            document.getElementById('finalMessage').textContent = `¡Serie Terminada! Ganador: ${winner} (X: ${scoreX}, O: ${scoreO})`;
+            document.getElementById('finalModal').style.display = 'flex';
+        }
+
+        function resetGame() {
+            ticTacToeBoard = ['', '', '', '', '', '', '', '', ''];
+            currentPlayer = 'X';
+            scoreX = 0; scoreO = 0; rounds = 0;
+            document.getElementById('winModal').style.display = 'none';
+            document.getElementById('finalModal').style.display = 'none';
+            saveScores();
+            updateScore();
+            renderTicTacToe();
+        }
+
+        function updateScore() {
+            document.getElementById('scoreX').textContent = scoreX;
+            document.getElementById('scoreO').textContent = scoreO;
+            document.getElementById('rounds').textContent = `${rounds}/${maxRounds}`;
+        }
+
+        renderTicTacToe();
+    </script>
+</body>
+</html>
